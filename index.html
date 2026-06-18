@@ -19,19 +19,36 @@
 </style>
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body>
 <div id="root"></div>
 
-<script type="text/jsx-app" id="app-source">
-const { useState, useEffect, useRef } = React;
+<script>
+(function () {
+  var root = document.getElementById("root");
+  if (!window.React || !window.ReactDOM) {
+    root.innerHTML = '<div style="color:#EAF2EF;font-family:system-ui,sans-serif;max-width:480px;margin:40px auto;padding:0 20px"><h2>Could not load</h2><p>React did not load. Check your connection and refresh.</p></div>';
+    return;
+  }
+  try {
+const {
+  useState,
+  useEffect,
+  useRef
+} = React;
 
 // ---- palette -------------------------------------------------------------
 const C = {
-  ink: "#0E2A2E", ink2: "#123A3E", card: "#15393D", line: "#22535790",
-  mist: "#94B4B0", paper: "#EAF2EF", grow: "#6FCF97", growDeep: "#39A877",
-  dawn: "#E8B04B", locked: "#1B3D41",
+  ink: "#0E2A2E",
+  ink2: "#123A3E",
+  card: "#15393D",
+  line: "#22535790",
+  mist: "#94B4B0",
+  paper: "#EAF2EF",
+  grow: "#6FCF97",
+  growDeep: "#39A877",
+  dawn: "#E8B04B",
+  locked: "#1B3D41"
 };
 
 // ---- inline SVG icons (no dependencies) ----------------------------------
@@ -50,84 +67,128 @@ const ICONS = {
   Lock: '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
   Check: '<path d="M20 6 9 17l-5-5"/>',
   Settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
-  X: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  X: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>'
 };
-
-function SvgIcon({ name, size = 24 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-      dangerouslySetInnerHTML={{ __html: ICONS[name] || "" }} />
-  );
+function SvgIcon({
+  name,
+  size = 24
+}) {
+  return /*#__PURE__*/React.createElement("svg", {
+    width: size,
+    height: size,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+    dangerouslySetInnerHTML: {
+      __html: ICONS[name] || ""
+    }
+  });
 }
 
 // ---- milestones (badge + what's healing) ---------------------------------
-const MILESTONES = [
-  { h: 1,    title: "First hour",       icon: "Wind",            body: "Your heart rate and blood pressure are already easing back toward normal." },
-  { h: 12,   title: "Half a day",       icon: "Sunrise",         body: "Blood oxygen and circulation steady as the nicotine level in you keeps falling." },
-  { h: 24,   title: "One full day",     icon: "Sprout",          body: "A whole day. Withdrawal tends to peak around now, then starts turning the corner." },
-  { h: 48,   title: "Over the hump",    icon: "Heart",           body: "The 48-hour wall. Most people call this the hardest point, and you're through it." },
-  { h: 72,   title: "Nicotine cleared", icon: "Droplets",        body: "Nicotine is essentially out of your body now. Taste and smell begin to sharpen." },
-  { h: 168,  title: "One week",         icon: "Leaf",            body: "A full week. Cravings are getting shorter and spacing further apart. Sleep settles." },
-  { h: 336,  title: "Two weeks",        icon: "Flower2",         body: "Circulation is improving and the worst of the physical withdrawal is behind you." },
-  { h: 720,  title: "One month",        icon: "Sun",             body: "Your brain's nicotine receptors are starting to return toward normal numbers." },
-  { h: 1008, title: "Halfway down",     icon: "ArrowDownCircle", body: "Six weeks. Patch steps down to 14mg today, your body needs less to stay level." },
-  { h: 1344, title: "Final step",       icon: "ArrowDownCircle", body: "Eight weeks. Last patch step, 7mg. The taper is nearly done." },
-  { h: 1680, title: "Unhooked",         icon: "Award",           body: "Ten weeks. Patch-free from here. You handled the chemistry and the all-day habit." },
-  { h: 2160, title: "Rewired",          icon: "Trophy",          body: "Three months. Receptors and dopamine signaling are close to baseline. Cravings are occasional, not constant." },
-];
-
-const ENCOURAGEMENTS = [
-  "One day at a time. The puff you don't take is the whole win.",
-  "Cravings crest like a wave and pass in 3 to 5 minutes. Ride it out.",
-  "You reached for it within 5 minutes of waking. Each morning you don't is your brain relearning.",
-  "Boredom and stress are the loudest triggers. Name the feeling before you act on it.",
-  "You're not giving something up. You're getting your baseline back.",
-  "Hands busy, mouth busy: lozenge, water, a walk. The habit fades faster than you'd think.",
-  "Every craving you outlast makes the next one weaker. That's literally how this rewires.",
-  "Slips aren't failure. If one happens, the plan still works. Just pick the patch back up.",
-  "The early days are the steepest. You already chose the hardest part on purpose.",
-  "Future-you, three months out, is quietly grateful right now.",
-];
-
-const PREP_NOTES = [
-  "Quit day is coming. Have your 21mg patches and 4mg lozenges in the house and ready.",
-  "Pick your three biggest trigger moments and decide now what you'll do instead in each.",
-  "On quit morning, the patch goes on the second you wake, before anything else.",
-  "Toss or hand off your device the night before so it isn't within reach on day one.",
-];
+const MILESTONES = [{
+  h: 1,
+  title: "First hour",
+  icon: "Wind",
+  body: "Your heart rate and blood pressure are already easing back toward normal."
+}, {
+  h: 12,
+  title: "Half a day",
+  icon: "Sunrise",
+  body: "Blood oxygen and circulation steady as the nicotine level in you keeps falling."
+}, {
+  h: 24,
+  title: "One full day",
+  icon: "Sprout",
+  body: "A whole day. Withdrawal tends to peak around now, then starts turning the corner."
+}, {
+  h: 48,
+  title: "Over the hump",
+  icon: "Heart",
+  body: "The 48-hour wall. Most people call this the hardest point, and you're through it."
+}, {
+  h: 72,
+  title: "Nicotine cleared",
+  icon: "Droplets",
+  body: "Nicotine is essentially out of your body now. Taste and smell begin to sharpen."
+}, {
+  h: 168,
+  title: "One week",
+  icon: "Leaf",
+  body: "A full week. Cravings are getting shorter and spacing further apart. Sleep settles."
+}, {
+  h: 336,
+  title: "Two weeks",
+  icon: "Flower2",
+  body: "Circulation is improving and the worst of the physical withdrawal is behind you."
+}, {
+  h: 720,
+  title: "One month",
+  icon: "Sun",
+  body: "Your brain's nicotine receptors are starting to return toward normal numbers."
+}, {
+  h: 1008,
+  title: "Halfway down",
+  icon: "ArrowDownCircle",
+  body: "Six weeks. Patch steps down to 14mg today, your body needs less to stay level."
+}, {
+  h: 1344,
+  title: "Final step",
+  icon: "ArrowDownCircle",
+  body: "Eight weeks. Last patch step, 7mg. The taper is nearly done."
+}, {
+  h: 1680,
+  title: "Unhooked",
+  icon: "Award",
+  body: "Ten weeks. Patch-free from here. You handled the chemistry and the all-day habit."
+}, {
+  h: 2160,
+  title: "Rewired",
+  icon: "Trophy",
+  body: "Three months. Receptors and dopamine signaling are close to baseline. Cravings are occasional, not constant."
+}];
+const ENCOURAGEMENTS = ["One day at a time. The puff you don't take is the whole win.", "Cravings crest like a wave and pass in 3 to 5 minutes. Ride it out.", "You reached for it within 5 minutes of waking. Each morning you don't is your brain relearning.", "Boredom and stress are the loudest triggers. Name the feeling before you act on it.", "You're not giving something up. You're getting your baseline back.", "Hands busy, mouth busy: lozenge, water, a walk. The habit fades faster than you'd think.", "Every craving you outlast makes the next one weaker. That's literally how this rewires.", "Slips aren't failure. If one happens, the plan still works. Just pick the patch back up.", "The early days are the steepest. You already chose the hardest part on purpose.", "Future-you, three months out, is quietly grateful right now."];
+const PREP_NOTES = ["Quit day is coming. Have your 21mg patches and 4mg lozenges in the house and ready.", "Pick your three biggest trigger moments and decide now what you'll do instead in each.", "On quit morning, the patch goes on the second you wake, before anything else.", "Toss or hand off your device the night before so it isn't within reach on day one."];
 
 // ---- storage helpers (browser localStorage) ------------------------------
 function loadKey(key, fallback) {
   try {
     const v = localStorage.getItem(key);
     return v ? JSON.parse(v) : fallback;
-  } catch { return fallback; }
+  } catch {
+    return fallback;
+  }
 }
 function saveKey(key, value) {
-  try { localStorage.setItem(key, JSON.stringify(value)); }
-  catch (e) { console.error("save failed", e); }
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (e) {
+    console.error("save failed", e);
+  }
 }
-
 const DEFAULT_QUIT = "2026-06-20";
 const MOOD_LABELS = ["Rough", "Low", "Okay", "Good", "Great"];
 const CRAVE_LABELS = ["None", "Mild", "Noticeable", "Strong", "Hard", "Intense"];
 const MOOD_EMOJI = ["\uD83D\uDE23", "\uD83D\uDE41", "\uD83D\uDE10", "\uD83D\uDE42", "\uD83D\uDE04"];
-
 function fmtDur(ms) {
   if (ms < 0) ms = 0;
   const s = Math.floor(ms / 1000);
   const d = Math.floor(s / 86400);
-  const h = Math.floor((s % 86400) / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  return { d, h, m };
+  const h = Math.floor(s % 86400 / 3600);
+  const m = Math.floor(s % 3600 / 60);
+  return {
+    d,
+    h,
+    m
+  };
 }
-
 function QuitTracker() {
   const [now, setNow] = useState(Date.now());
   const [quitISO, setQuitISO] = useState(DEFAULT_QUIT);
   const [moods, setMoods] = useState([]);
-
   const [mood, setMood] = useState(2);
   const [crave, setCrave] = useState(2);
   const [note, setNote] = useState("");
@@ -135,266 +196,591 @@ function QuitTracker() {
   const [showSettings, setShowSettings] = useState(false);
   const [dateDraft, setDateDraft] = useState(DEFAULT_QUIT);
   const toastTimer = useRef(null);
-
   useEffect(() => {
-    const cfg = loadKey("quit:config", { quitISO: DEFAULT_QUIT });
+    const cfg = loadKey("quit:config", {
+      quitISO: DEFAULT_QUIT
+    });
     const m = loadKey("quit:moods", []);
     setQuitISO(cfg.quitISO || DEFAULT_QUIT);
     setDateDraft(cfg.quitISO || DEFAULT_QUIT);
     setMoods(Array.isArray(m) ? m : []);
   }, []);
-
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, []);
-
   const quitMs = new Date(quitISO + "T00:00:00").getTime();
   const elapsedMs = now - quitMs;
   const preQuit = elapsedMs < 0;
   const elapsedH = elapsedMs / 3.6e6;
-  const { d, h, m } = fmtDur(elapsedMs);
+  const {
+    d,
+    h,
+    m
+  } = fmtDur(elapsedMs);
   const cd = fmtDur(quitMs - now);
-
-  const earnedCount = MILESTONES.filter((x) => elapsedH >= x.h).length;
-  const next = MILESTONES.find((x) => elapsedH < x.h);
+  const earnedCount = MILESTONES.filter(x => elapsedH >= x.h).length;
+  const next = MILESTONES.find(x => elapsedH < x.h);
   const prevH = earnedCount > 0 ? MILESTONES[earnedCount - 1].h : 0;
-  const pct = next
-    ? Math.max(0, Math.min(100, ((elapsedH - prevH) / (next.h - prevH)) * 100))
-    : 100;
-
+  const pct = next ? Math.max(0, Math.min(100, (elapsedH - prevH) / (next.h - prevH) * 100)) : 100;
   const dayIndex = Math.max(0, Math.floor(elapsedH / 24));
-  const encour = preQuit
-    ? PREP_NOTES[dayIndex % PREP_NOTES.length]
-    : ENCOURAGEMENTS[dayIndex % ENCOURAGEMENTS.length];
-
+  const encour = preQuit ? PREP_NOTES[dayIndex % PREP_NOTES.length] : ENCOURAGEMENTS[dayIndex % ENCOURAGEMENTS.length];
   function flash(msg) {
     setToast(msg);
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(""), 2200);
   }
-
   function saveMood() {
-    const entry = { ts: Date.now(), mood, crave, note: note.trim() };
+    const entry = {
+      ts: Date.now(),
+      mood,
+      crave,
+      note: note.trim()
+    };
     const upd = [...moods, entry];
     setMoods(upd);
     setNote("");
     saveKey("quit:moods", upd);
     flash("Check-in saved");
   }
-
   function saveDate() {
     setQuitISO(dateDraft);
     setShowSettings(false);
-    saveKey("quit:config", { quitISO: dateDraft });
+    saveKey("quit:config", {
+      quitISO: dateDraft
+    });
     flash("Quit date updated");
   }
-
   const recent = [...moods].reverse().slice(0, 7);
-
   function nextLabel() {
     if (!next) return "Every milestone earned";
     const remH = next.h - elapsedH;
-    if (remH >= 24) { const dd = Math.ceil(remH / 24); return next.title + " in " + dd + " day" + (dd > 1 ? "s" : ""); }
+    if (remH >= 24) {
+      const dd = Math.ceil(remH / 24);
+      return next.title + " in " + dd + " day" + (dd > 1 ? "s" : "");
+    }
     if (remH >= 1) return next.title + " in " + Math.ceil(remH) + "h";
     return next.title + " in " + Math.ceil(remH * 60) + "m";
   }
-
-  return (
-    <div style={{
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
       minHeight: "100vh",
       background: "linear-gradient(180deg, " + C.ink + " 0%, #0C2226 55%, #14302B 100%)",
-      color: C.paper, fontFamily: "'Inter', system-ui, sans-serif", padding: "0 0 56px",
-    }}>
-      {/* header */}
-      <div style={{ maxWidth: 480, margin: "0 auto", padding: "20px 20px 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontSize: 13, letterSpacing: 2, textTransform: "uppercase", color: C.mist }}>Vape-free</span>
-        <button onClick={() => setShowSettings(true)} aria-label="Settings"
-          style={{ background: "none", border: "none", color: C.mist, cursor: "pointer", padding: 6 }}>
-          <SvgIcon name="Settings" size={18} />
-        </button>
-      </div>
-
-      {/* hero */}
-      <div style={{ maxWidth: 480, margin: "0 auto", padding: "8px 20px 26px", textAlign: "center" }}>
-        {preQuit ? (
-          <React.Fragment>
-            <div className="qt-counter" style={{ fontSize: 72, lineHeight: 1, color: C.dawn, fontWeight: 500 }}>
-              {cd.d}<span style={{ fontSize: 26, color: C.mist }}>d</span> {cd.h}<span style={{ fontSize: 26, color: C.mist }}>h</span>
-            </div>
-            <div style={{ marginTop: 10, color: C.mist, fontSize: 15 }}>
-              until quit day, {new Date(quitMs).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
-            </div>
-          </React.Fragment>
-        ) : (
-          <React.Fragment>
-            <div className="qt-counter" style={{ fontSize: 88, lineHeight: .95, color: C.grow, fontWeight: 500 }}>{d}</div>
-            <div style={{ color: C.mist, fontSize: 15, marginTop: 2 }}>
-              {d === 1 ? "day" : "days"} free &middot; {h}h {m}m
-            </div>
-          </React.Fragment>
-        )}
-      </div>
-
-      {/* encouragement */}
-      <div style={{ maxWidth: 480, margin: "0 auto", padding: "0 20px" }}>
-        <div style={{ background: C.card, border: "1px solid " + C.line, borderRadius: 16, padding: "16px 18px", display: "flex", gap: 12 }}>
-          <div style={{ width: 4, borderRadius: 4, background: C.dawn, flexShrink: 0 }} />
-          <p style={{ margin: 0, fontSize: 15, lineHeight: 1.5, fontStyle: "italic", color: C.paper }}>{encour}</p>
-        </div>
-      </div>
-
-      {/* progress to next */}
-      {!preQuit && (
-        <div style={{ maxWidth: 480, margin: "20px auto 0", padding: "0 20px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: C.mist, marginBottom: 7 }}>
-            <span>{earnedCount} of {MILESTONES.length} milestones</span>
-            <span>{nextLabel()}</span>
-          </div>
-          <div style={{ height: 8, background: C.locked, borderRadius: 8, overflow: "hidden" }}>
-            <div style={{ height: "100%", width: pct + "%", background: "linear-gradient(90deg, " + C.growDeep + ", " + C.grow + ")", borderRadius: 8, transition: "width .6s ease" }} />
-          </div>
-        </div>
-      )}
-
-      {/* milestone / healing cards */}
-      <div style={{ maxWidth: 480, margin: "26px auto 0", padding: "0 20px" }}>
-        <h2 style={{ fontFamily: "'Fraunces',serif", fontWeight: 500, fontSize: 20, margin: "0 0 14px" }}>Milestones &amp; what heals</h2>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {MILESTONES.map((ms, i) => {
-            const earned = !preQuit && elapsedH >= ms.h;
-            const iconName = earned ? ms.icon : "Lock";
-            return (
-              <div key={i} style={{
-                display: "flex", gap: 14, padding: 14, borderRadius: 14,
-                background: earned ? "#173F38" : C.locked,
-                border: "1px solid " + (earned ? C.growDeep : C.line),
-                opacity: earned ? 1 : 0.62,
-              }}>
-                <div style={{
-                  width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-                  display: "grid", placeItems: "center",
-                  background: earned ? C.grow : "#0E2A2E", color: earned ? C.ink : C.mist,
-                }}>
-                  <SvgIcon name={iconName} size={22} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontWeight: 600, fontSize: 15 }}>{ms.title}</span>
-                    {earned && <span style={{ color: C.grow, display: "inline-flex" }}><SvgIcon name="Check" size={15} /></span>}
-                  </div>
-                  <p style={{ margin: "3px 0 0", fontSize: 13.5, lineHeight: 1.45, color: earned ? "#CFE7DD" : C.mist }}>{ms.body}</p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        <p style={{ fontSize: 11.5, color: C.mist, marginTop: 12, lineHeight: 1.5 }}>
-          Healing notes are general estimates drawn from nicotine-cessation research. Individual recovery varies, and parts of the classic timeline come from broader tobacco studies.
-        </p>
-      </div>
-
-      {/* mood check-in */}
-      <div style={{ maxWidth: 480, margin: "28px auto 0", padding: "0 20px" }}>
-        <h2 style={{ fontFamily: "'Fraunces',serif", fontWeight: 500, fontSize: 20, margin: "0 0 6px" }}>Check in</h2>
-        <p style={{ margin: "0 0 16px", fontSize: 13.5, color: C.mist, lineHeight: 1.5 }}>
-          Pause a second. Notice what's actually here right now, without fixing it. Then mark it.
-        </p>
-        <div style={{ background: C.card, border: "1px solid " + C.line, borderRadius: 16, padding: 18 }}>
-          <SliderRow label="Mood" value={mood} setValue={setMood} max={4} legend={MOOD_LABELS[mood]} accent={C.grow} />
-          <div style={{ height: 18 }} />
-          <SliderRow label="Craving" value={crave} setValue={setCrave} max={5} legend={CRAVE_LABELS[crave]} accent={C.dawn} />
-          <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Anything you noticed? (optional)" rows={2}
-            style={{ width: "100%", marginTop: 16, resize: "none", borderRadius: 10, background: C.ink, border: "1px solid " + C.line, color: C.paper, padding: "10px 12px", fontSize: 14, fontFamily: "inherit" }} />
-          <button onClick={saveMood} style={{ width: "100%", marginTop: 12, padding: "13px 0", border: "none", borderRadius: 11, background: C.grow, color: C.ink, fontWeight: 600, fontSize: 15, cursor: "pointer", fontFamily: "inherit" }}>
-            Save check-in
-          </button>
-        </div>
-      </div>
-
-      {/* recent check-ins */}
-      {recent.length > 0 && (
-        <div style={{ maxWidth: 480, margin: "22px auto 0", padding: "0 20px" }}>
-          <h3 style={{ fontSize: 13, letterSpacing: 1.5, textTransform: "uppercase", color: C.mist, fontWeight: 600, margin: "0 0 12px" }}>Recent</h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {recent.map((r, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, background: C.card, border: "1px solid " + C.line, borderRadius: 12, padding: "10px 14px" }}>
-                <div style={{ width: 40, textAlign: "center" }}>
-                  <div style={{ fontSize: 20, height: 24 }}>{MOOD_EMOJI[r.mood]}</div>
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, color: C.paper }}>
-                    {MOOD_LABELS[r.mood]} &middot; craving {CRAVE_LABELS[r.crave].toLowerCase()}
-                  </div>
-                  {r.note && <div style={{ fontSize: 12.5, color: C.mist, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.note}</div>}
-                </div>
-                <div style={{ fontSize: 11.5, color: C.mist, flexShrink: 0 }}>
-                  {new Date(r.ts).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* toast */}
-      {toast && (
-        <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", background: C.grow, color: C.ink, padding: "10px 20px", borderRadius: 999, fontWeight: 600, fontSize: 14, boxShadow: "0 8px 24px rgba(0,0,0,.4)", zIndex: 20 }}>
-          {toast}
-        </div>
-      )}
-
-      {/* settings */}
-      {showSettings && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(6,18,20,.7)", display: "grid", placeItems: "center", zIndex: 30, padding: 20 }} onClick={() => setShowSettings(false)}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: C.ink2, border: "1px solid " + C.line, borderRadius: 18, padding: 22, width: "100%", maxWidth: 360 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <span style={{ fontFamily: "'Fraunces',serif", fontSize: 19, fontWeight: 500 }}>Quit date</span>
-              <button onClick={() => setShowSettings(false)} aria-label="Close" style={{ background: "none", border: "none", color: C.mist, cursor: "pointer" }}><SvgIcon name="X" size={20} /></button>
-            </div>
-            <input type="date" value={dateDraft} onChange={(e) => setDateDraft(e.target.value)}
-              style={{ width: "100%", padding: "11px 12px", borderRadius: 10, background: C.ink, border: "1px solid " + C.line, color: C.paper, fontSize: 15, fontFamily: "inherit" }} />
-            <button onClick={saveDate} style={{ width: "100%", marginTop: 14, padding: "12px 0", border: "none", borderRadius: 11, background: C.grow, color: C.ink, fontWeight: 600, fontSize: 15, cursor: "pointer", fontFamily: "inherit" }}>Save</button>
-            <p style={{ fontSize: 12, color: C.mist, marginTop: 12, lineHeight: 1.5 }}>
-              The counter, badges, and healing notes all key off this date. Your check-ins are kept separately and saved in this browser.
-            </p>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+      color: C.paper,
+      fontFamily: "'Inter', system-ui, sans-serif",
+      padding: "0 0 56px"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxWidth: 480,
+      margin: "0 auto",
+      padding: "20px 20px 0",
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 13,
+      letterSpacing: 2,
+      textTransform: "uppercase",
+      color: C.mist
+    }
+  }, "Vape-free"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setShowSettings(true),
+    "aria-label": "Settings",
+    style: {
+      background: "none",
+      border: "none",
+      color: C.mist,
+      cursor: "pointer",
+      padding: 6
+    }
+  }, /*#__PURE__*/React.createElement(SvgIcon, {
+    name: "Settings",
+    size: 18
+  }))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxWidth: 480,
+      margin: "0 auto",
+      padding: "8px 20px 26px",
+      textAlign: "center"
+    }
+  }, preQuit ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "qt-counter",
+    style: {
+      fontSize: 72,
+      lineHeight: 1,
+      color: C.dawn,
+      fontWeight: 500
+    }
+  }, cd.d, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 26,
+      color: C.mist
+    }
+  }, "d"), " ", cd.h, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 26,
+      color: C.mist
+    }
+  }, "h")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 10,
+      color: C.mist,
+      fontSize: 15
+    }
+  }, "until quit day, ", new Date(quitMs).toLocaleDateString(undefined, {
+    weekday: "long",
+    month: "long",
+    day: "numeric"
+  }))) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "qt-counter",
+    style: {
+      fontSize: 88,
+      lineHeight: .95,
+      color: C.grow,
+      fontWeight: 500
+    }
+  }, d), /*#__PURE__*/React.createElement("div", {
+    style: {
+      color: C.mist,
+      fontSize: 15,
+      marginTop: 2
+    }
+  }, d === 1 ? "day" : "days", " free · ", h, "h ", m, "m"))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxWidth: 480,
+      margin: "0 auto",
+      padding: "0 20px"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: C.card,
+      border: "1px solid " + C.line,
+      borderRadius: 16,
+      padding: "16px 18px",
+      display: "flex",
+      gap: 12
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 4,
+      borderRadius: 4,
+      background: C.dawn,
+      flexShrink: 0
+    }
+  }), /*#__PURE__*/React.createElement("p", {
+    style: {
+      margin: 0,
+      fontSize: 15,
+      lineHeight: 1.5,
+      fontStyle: "italic",
+      color: C.paper
+    }
+  }, encour))), !preQuit && /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxWidth: 480,
+      margin: "20px auto 0",
+      padding: "0 20px"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      justifyContent: "space-between",
+      fontSize: 13,
+      color: C.mist,
+      marginBottom: 7
+    }
+  }, /*#__PURE__*/React.createElement("span", null, earnedCount, " of ", MILESTONES.length, " milestones"), /*#__PURE__*/React.createElement("span", null, nextLabel())), /*#__PURE__*/React.createElement("div", {
+    style: {
+      height: 8,
+      background: C.locked,
+      borderRadius: 8,
+      overflow: "hidden"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      height: "100%",
+      width: pct + "%",
+      background: "linear-gradient(90deg, " + C.growDeep + ", " + C.grow + ")",
+      borderRadius: 8,
+      transition: "width .6s ease"
+    }
+  }))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxWidth: 480,
+      margin: "26px auto 0",
+      padding: "0 20px"
+    }
+  }, /*#__PURE__*/React.createElement("h2", {
+    style: {
+      fontFamily: "'Fraunces',serif",
+      fontWeight: 500,
+      fontSize: 20,
+      margin: "0 0 14px"
+    }
+  }, "Milestones & what heals"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 10
+    }
+  }, MILESTONES.map((ms, i) => {
+    const earned = !preQuit && elapsedH >= ms.h;
+    const iconName = earned ? ms.icon : "Lock";
+    return /*#__PURE__*/React.createElement("div", {
+      key: i,
+      style: {
+        display: "flex",
+        gap: 14,
+        padding: 14,
+        borderRadius: 14,
+        background: earned ? "#173F38" : C.locked,
+        border: "1px solid " + (earned ? C.growDeep : C.line),
+        opacity: earned ? 1 : 0.62
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        flexShrink: 0,
+        display: "grid",
+        placeItems: "center",
+        background: earned ? C.grow : "#0E2A2E",
+        color: earned ? C.ink : C.mist
+      }
+    }, /*#__PURE__*/React.createElement(SvgIcon, {
+      name: iconName,
+      size: 22
+    })), /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 8
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontWeight: 600,
+        fontSize: 15
+      }
+    }, ms.title), earned && /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: C.grow,
+        display: "inline-flex"
+      }
+    }, /*#__PURE__*/React.createElement(SvgIcon, {
+      name: "Check",
+      size: 15
+    }))), /*#__PURE__*/React.createElement("p", {
+      style: {
+        margin: "3px 0 0",
+        fontSize: 13.5,
+        lineHeight: 1.45,
+        color: earned ? "#CFE7DD" : C.mist
+      }
+    }, ms.body)));
+  })), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 11.5,
+      color: C.mist,
+      marginTop: 12,
+      lineHeight: 1.5
+    }
+  }, "Healing notes are general estimates drawn from nicotine-cessation research. Individual recovery varies, and parts of the classic timeline come from broader tobacco studies.")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxWidth: 480,
+      margin: "28px auto 0",
+      padding: "0 20px"
+    }
+  }, /*#__PURE__*/React.createElement("h2", {
+    style: {
+      fontFamily: "'Fraunces',serif",
+      fontWeight: 500,
+      fontSize: 20,
+      margin: "0 0 6px"
+    }
+  }, "Check in"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      margin: "0 0 16px",
+      fontSize: 13.5,
+      color: C.mist,
+      lineHeight: 1.5
+    }
+  }, "Pause a second. Notice what's actually here right now, without fixing it. Then mark it."), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: C.card,
+      border: "1px solid " + C.line,
+      borderRadius: 16,
+      padding: 18
+    }
+  }, /*#__PURE__*/React.createElement(SliderRow, {
+    label: "Mood",
+    value: mood,
+    setValue: setMood,
+    max: 4,
+    legend: MOOD_LABELS[mood],
+    accent: C.grow
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      height: 18
+    }
+  }), /*#__PURE__*/React.createElement(SliderRow, {
+    label: "Craving",
+    value: crave,
+    setValue: setCrave,
+    max: 5,
+    legend: CRAVE_LABELS[crave],
+    accent: C.dawn
+  }), /*#__PURE__*/React.createElement("textarea", {
+    value: note,
+    onChange: e => setNote(e.target.value),
+    placeholder: "Anything you noticed? (optional)",
+    rows: 2,
+    style: {
+      width: "100%",
+      marginTop: 16,
+      resize: "none",
+      borderRadius: 10,
+      background: C.ink,
+      border: "1px solid " + C.line,
+      color: C.paper,
+      padding: "10px 12px",
+      fontSize: 14,
+      fontFamily: "inherit"
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: saveMood,
+    style: {
+      width: "100%",
+      marginTop: 12,
+      padding: "13px 0",
+      border: "none",
+      borderRadius: 11,
+      background: C.grow,
+      color: C.ink,
+      fontWeight: 600,
+      fontSize: 15,
+      cursor: "pointer",
+      fontFamily: "inherit"
+    }
+  }, "Save check-in"))), recent.length > 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxWidth: 480,
+      margin: "22px auto 0",
+      padding: "0 20px"
+    }
+  }, /*#__PURE__*/React.createElement("h3", {
+    style: {
+      fontSize: 13,
+      letterSpacing: 1.5,
+      textTransform: "uppercase",
+      color: C.mist,
+      fontWeight: 600,
+      margin: "0 0 12px"
+    }
+  }, "Recent"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 8
+    }
+  }, recent.map((r, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 12,
+      background: C.card,
+      border: "1px solid " + C.line,
+      borderRadius: 12,
+      padding: "10px 14px"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 40,
+      textAlign: "center"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 20,
+      height: 24
+    }
+  }, MOOD_EMOJI[r.mood])), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      color: C.paper
+    }
+  }, MOOD_LABELS[r.mood], " · craving ", CRAVE_LABELS[r.crave].toLowerCase()), r.note && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12.5,
+      color: C.mist,
+      marginTop: 2,
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap"
+    }
+  }, r.note)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11.5,
+      color: C.mist,
+      flexShrink: 0
+    }
+  }, new Date(r.ts).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric"
+  })))))), toast && /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "fixed",
+      bottom: 24,
+      left: "50%",
+      transform: "translateX(-50%)",
+      background: C.grow,
+      color: C.ink,
+      padding: "10px 20px",
+      borderRadius: 999,
+      fontWeight: 600,
+      fontSize: 14,
+      boxShadow: "0 8px 24px rgba(0,0,0,.4)",
+      zIndex: 20
+    }
+  }, toast), showSettings && /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "fixed",
+      inset: 0,
+      background: "rgba(6,18,20,.7)",
+      display: "grid",
+      placeItems: "center",
+      zIndex: 30,
+      padding: 20
+    },
+    onClick: () => setShowSettings(false)
+  }, /*#__PURE__*/React.createElement("div", {
+    onClick: e => e.stopPropagation(),
+    style: {
+      background: C.ink2,
+      border: "1px solid " + C.line,
+      borderRadius: 18,
+      padding: 22,
+      width: "100%",
+      maxWidth: 360
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 16
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: "'Fraunces',serif",
+      fontSize: 19,
+      fontWeight: 500
+    }
+  }, "Quit date"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setShowSettings(false),
+    "aria-label": "Close",
+    style: {
+      background: "none",
+      border: "none",
+      color: C.mist,
+      cursor: "pointer"
+    }
+  }, /*#__PURE__*/React.createElement(SvgIcon, {
+    name: "X",
+    size: 20
+  }))), /*#__PURE__*/React.createElement("input", {
+    type: "date",
+    value: dateDraft,
+    onChange: e => setDateDraft(e.target.value),
+    style: {
+      width: "100%",
+      padding: "11px 12px",
+      borderRadius: 10,
+      background: C.ink,
+      border: "1px solid " + C.line,
+      color: C.paper,
+      fontSize: 15,
+      fontFamily: "inherit"
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: saveDate,
+    style: {
+      width: "100%",
+      marginTop: 14,
+      padding: "12px 0",
+      border: "none",
+      borderRadius: 11,
+      background: C.grow,
+      color: C.ink,
+      fontWeight: 600,
+      fontSize: 15,
+      cursor: "pointer",
+      fontFamily: "inherit"
+    }
+  }, "Save"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 12,
+      color: C.mist,
+      marginTop: 12,
+      lineHeight: 1.5
+    }
+  }, "The counter, badges, and healing notes all key off this date. Your check-ins are kept separately and saved in this browser."))));
 }
-
-function SliderRow({ label, value, setValue, max, legend, accent }) {
-  return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
-        <span style={{ fontSize: 14, fontWeight: 500, color: C.paper }}>{label}</span>
-        <span style={{ fontSize: 13, color: accent, fontWeight: 600 }}>{legend}</span>
-      </div>
-      <input type="range" min={0} max={max} step={1} value={value}
-        onChange={(e) => setValue(Number(e.target.value))} aria-label={label}
-        style={{ width: "100%", background: "linear-gradient(90deg, " + accent + " " + (value / max) * 100 + "%, " + C.locked + " " + (value / max) * 100 + "%)" }} />
-    </div>
-  );
+function SliderRow({
+  label,
+  value,
+  setValue,
+  max,
+  legend,
+  accent
+}) {
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "baseline",
+      marginBottom: 8
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 14,
+      fontWeight: 500,
+      color: C.paper
+    }
+  }, label), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 13,
+      color: accent,
+      fontWeight: 600
+    }
+  }, legend)), /*#__PURE__*/React.createElement("input", {
+    type: "range",
+    min: 0,
+    max: max,
+    step: 1,
+    value: value,
+    onChange: e => setValue(Number(e.target.value)),
+    "aria-label": label,
+    style: {
+      width: "100%",
+      background: "linear-gradient(90deg, " + accent + " " + value / max * 100 + "%, " + C.locked + " " + value / max * 100 + "%)"
+    }
+  }));
 }
-
 const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(<QuitTracker />);
-</script>
-<script>
-(function () {
-  var root = document.getElementById("root");
-  try {
-    if (!window.React || !window.ReactDOM) throw new Error("React did not load. Check your internet connection, then refresh.");
-    if (!window.Babel) throw new Error("Babel did not load. Check your internet connection, then refresh.");
-    var src = document.getElementById("app-source").textContent;
-    // Compile with the CLASSIC runtime so JSX becomes React.createElement.
-    // The automatic runtime emits an import statement, which a plain script
-    // cannot use, and the page would render blank.
-    var compiled = Babel.transform(src, { presets: [["react", { runtime: "classic" }]] }).code;
-    new Function(compiled)();
-  } catch (e) {
+root.render(/*#__PURE__*/React.createElement(QuitTracker, null));  } catch (e) {
     root.innerHTML =
       '<div style="color:#EAF2EF;font-family:system-ui,sans-serif;max-width:480px;margin:40px auto;padding:0 20px">' +
       '<h2 style="font-weight:600">The tracker could not start</h2>' +
