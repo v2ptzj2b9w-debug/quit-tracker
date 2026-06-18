@@ -24,7 +24,7 @@
 <body>
 <div id="root"></div>
 
-<script type="text/babel" data-presets="react">
+<script type="text/jsx-app" id="app-source">
 const { useState, useEffect, useRef } = React;
 
 // ---- palette -------------------------------------------------------------
@@ -381,6 +381,28 @@ function SliderRow({ label, value, setValue, max, legend, accent }) {
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(<QuitTracker />);
+</script>
+<script>
+(function () {
+  var root = document.getElementById("root");
+  try {
+    if (!window.React || !window.ReactDOM) throw new Error("React did not load. Check your internet connection, then refresh.");
+    if (!window.Babel) throw new Error("Babel did not load. Check your internet connection, then refresh.");
+    var src = document.getElementById("app-source").textContent;
+    // Compile with the CLASSIC runtime so JSX becomes React.createElement.
+    // The automatic runtime emits an import statement, which a plain script
+    // cannot use, and the page would render blank.
+    var compiled = Babel.transform(src, { presets: [["react", { runtime: "classic" }]] }).code;
+    new Function(compiled)();
+  } catch (e) {
+    root.innerHTML =
+      '<div style="color:#EAF2EF;font-family:system-ui,sans-serif;max-width:480px;margin:40px auto;padding:0 20px">' +
+      '<h2 style="font-weight:600">The tracker could not start</h2>' +
+      '<pre style="white-space:pre-wrap;background:#15393D;border-radius:10px;padding:14px;font-size:13px">' +
+      String(e && e.message ? e.message : e) + "</pre></div>";
+    console.error(e);
+  }
+})();
 </script>
 </body>
 </html>
