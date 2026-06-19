@@ -104,6 +104,39 @@
   .modal .mh span{ font-family:'Fraunces',serif; font-size:19px; font-weight:500; }
   .modal input[type=date]{ width:100%; padding:11px 12px; border-radius:10px; background:var(--ink); border:1px solid var(--line); color:var(--paper); font-size:15px; font-family:inherit; }
   .modal .note{ font-size:12px; color:var(--mist); margin-top:12px; line-height:1.5; }
+  /* onboarding */
+  .ob{ width:100%; max-width:400px; }
+  .ob .topbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; min-height:24px; }
+  .ob .back, .ob .skip{ background:none; border:none; color:var(--mist); font-size:13.5px; cursor:pointer; font-family:inherit; padding:4px; }
+  .ob .dots{ display:flex; gap:7px; justify-content:center; margin-bottom:26px; }
+  .ob .dot{ width:7px; height:7px; border-radius:50%; background:var(--locked); }
+  .ob .dot.on{ background:var(--grow); }
+  .ob h1{ font-family:'Fraunces',serif; font-weight:500; font-size:27px; line-height:1.2; margin:0 0 10px; }
+  .ob .q{ font-family:'Fraunces',serif; font-weight:500; font-size:23px; line-height:1.25; margin:0 0 6px; }
+  .ob .sub{ color:var(--mist); font-size:14.5px; line-height:1.55; margin:0 0 22px; }
+  .ob .opts{ display:flex; flex-direction:column; gap:10px; }
+  .ob .opt{ text-align:left; background:var(--card); border:1px solid var(--line); border-radius:13px; padding:15px 16px; color:var(--paper); font-size:15px; font-family:inherit; cursor:pointer; transition:border-color .15s, background .15s; }
+  .ob .opt:hover{ border-color:var(--growDeep); }
+  .ob .opt.sel{ border-color:var(--grow); background:#173F38; }
+  .ob .opt .oh{ font-weight:600; }
+  .ob .opt .od{ color:var(--mist); font-size:13px; margin-top:2px; }
+  .ob input[type=date]{ width:100%; padding:13px 14px; border-radius:11px; background:var(--card); border:1px solid var(--line); color:var(--paper); font-size:16px; font-family:inherit; }
+  .ob .chips{ display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
+  .ob .chip{ background:var(--card); border:1px solid var(--line); border-radius:999px; padding:8px 14px; color:var(--paper); font-size:13.5px; cursor:pointer; font-family:inherit; }
+  .ob .chip.sel{ border-color:var(--grow); background:#173F38; color:var(--grow); }
+  .ob .planrow{ display:flex; gap:12px; padding:12px 0; border-bottom:1px solid var(--line); }
+  .ob .planrow:last-of-type{ border-bottom:none; }
+  .ob .planrow .ph{ font-weight:600; font-size:14.5px; }
+  .ob .planrow .pd{ color:var(--mist); font-size:13px; margin-top:1px; }
+  .ob .lz{ margin-top:14px; font-size:13.5px; color:#CFE7DD; }
+  .ob .disc2{ font-size:11.5px; color:var(--mist); line-height:1.5; margin:16px 0 0; }
+  /* plan panel in app */
+  .planpanel{ margin-top:18px; background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px 18px; }
+  .planpanel .pt{ font-family:'Fraunces',serif; font-size:17px; font-weight:500; margin:0 0 6px; }
+  .planpanel .pr{ display:flex; justify-content:space-between; gap:12px; padding:7px 0; font-size:14px; align-items:baseline; }
+  .planpanel .pr .mg{ color:var(--grow); font-weight:600; flex-shrink:0; }
+  .planpanel .pr .rg{ color:var(--mist); font-size:12.5px; text-align:right; }
+  .planpanel .lz{ margin-top:8px; font-size:13px; color:#CFE7DD; }
   button:focus-visible, input:focus-visible, textarea:focus-visible{ outline:2px solid var(--dawn); outline-offset:2px; }
   @media (prefers-reduced-motion: reduce){ .bignum,.spinner{ animation:none !important; } }
 </style>
@@ -129,6 +162,18 @@
   </div>
 </div>
 
+<!-- onboarding -->
+<div class="center" id="onboardView" style="display:none">
+  <div class="ob">
+    <div class="topbar">
+      <button class="back" id="obBack" style="visibility:hidden">&larr; Back</button>
+      <button class="skip" id="obSkip">Skip for now</button>
+    </div>
+    <div class="dots" id="obDots"></div>
+    <div id="obBody"></div>
+  </div>
+</div>
+
 <!-- app -->
 <div id="appView" style="display:none">
   <div class="wrap">
@@ -146,6 +191,7 @@
       <div class="row"><span id="progCount"></span><span id="progNext"></span></div>
       <div class="track"><div class="fill" id="progFill" style="width:0%"></div></div>
     </div>
+    <div id="planWrap"></div>
 
     <h2 class="sec">Milestones &amp; what heals</h2>
     <div class="cards" id="cards"></div>
@@ -174,6 +220,7 @@
     <input type="date" id="dateInput">
     <button class="primary" id="saveDate" style="margin-top:14px">Save</button>
     <p class="note">The counter, badges, and healing notes all key off this date. It syncs to your account along with your check-ins.</p>
+    <button class="linkbtn" id="rebuildPlan" style="margin-top:4px">Rebuild my plan</button>
   </div>
 </div>
 
@@ -208,20 +255,57 @@
     return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (ICONS[name] || "") + "</svg>";
   }
 
-  var MILESTONES = [
-    { h: 1,    title: "First hour",       icon: "Wind",            body: "Your heart rate and blood pressure are already easing back toward normal." },
-    { h: 12,   title: "Half a day",       icon: "Sunrise",         body: "Blood oxygen and circulation steady as the nicotine level in you keeps falling." },
-    { h: 24,   title: "One full day",     icon: "Sprout",          body: "A whole day. Withdrawal tends to peak around now, then starts turning the corner." },
-    { h: 48,   title: "Over the hump",    icon: "Heart",           body: "The 48-hour wall. Most people call this the hardest point, and you're through it." },
-    { h: 72,   title: "Nicotine cleared", icon: "Droplets",        body: "Nicotine is essentially out of your body now. Taste and smell begin to sharpen." },
-    { h: 168,  title: "One week",         icon: "Leaf",            body: "A full week. Cravings are getting shorter and spacing further apart. Sleep settles." },
-    { h: 336,  title: "Two weeks",        icon: "Flower2",         body: "Circulation is improving and the worst of the physical withdrawal is behind you." },
-    { h: 720,  title: "One month",        icon: "Sun",             body: "Your brain's nicotine receptors are starting to return toward normal numbers." },
-    { h: 1008, title: "Halfway down",     icon: "ArrowDownCircle", body: "Six weeks. Patch steps down to 14mg today, your body needs less to stay level." },
-    { h: 1344, title: "Final step",       icon: "ArrowDownCircle", body: "Eight weeks. Last patch step, 7mg. The taper is nearly done." },
-    { h: 1680, title: "Unhooked",         icon: "Award",           body: "Ten weeks. Patch-free from here. You handled the chemistry and the all-day habit." },
-    { h: 2160, title: "Rewired",          icon: "Trophy",          body: "Three months. Receptors and dopamine signaling are close to baseline. Cravings are occasional, not constant." }
+  // Universal body-healing timeline (independent of the patch schedule)
+  var HEALING = [
+    { h: 1,    title: "First hour",       icon: "Wind",     body: "Your heart rate and blood pressure are already easing back toward normal." },
+    { h: 12,   title: "Half a day",       icon: "Sunrise",  body: "Blood oxygen and circulation steady as the nicotine level in you keeps falling." },
+    { h: 24,   title: "One full day",     icon: "Sprout",   body: "A whole day. Withdrawal tends to peak around now, then starts turning the corner." },
+    { h: 48,   title: "Over the hump",    icon: "Heart",    body: "The 48-hour wall. Most people call this the hardest point, and you're through it." },
+    { h: 72,   title: "Nicotine cleared", icon: "Droplets", body: "Nicotine is essentially out of your body now. Taste and smell begin to sharpen." },
+    { h: 168,  title: "One week",         icon: "Leaf",     body: "A full week. Cravings are getting shorter and spacing further apart. Sleep settles." },
+    { h: 336,  title: "Two weeks",        icon: "Flower2",  body: "Circulation is improving and the worst of the physical withdrawal is behind you." },
+    { h: 720,  title: "One month",        icon: "Sun",      body: "Your brain's nicotine receptors are starting to return toward normal numbers." },
+    { h: 2160, title: "Rewired",          icon: "Trophy",   body: "Three months. Receptors and dopamine signaling are close to baseline. Cravings are occasional, not constant." }
   ];
+
+  // Standard combination-NRT taper for higher dependence; used as the fallback view
+  var DEFAULT_PLAN = { startMg:21, lozengeMg:4, dependence:"higher", phases:[{mg:21,weeks:6},{mg:14,weeks:2},{mg:7,weeks:2}] };
+  var currentPlan = null;
+
+  function computePlan(ttfc, usage){
+    // ttfc: 0=<=5min, 1=5-30min, 2=30-60min, 3=>1hr   usage: 0=heavy, 1=moderate, 2=light
+    if (ttfc <= 1 || usage === 0)
+      return { startMg:21, lozengeMg:4, dependence:"higher", phases:[{mg:21,weeks:6},{mg:14,weeks:2},{mg:7,weeks:2}] };
+    if (ttfc === 2 || usage === 1)
+      return { startMg:14, lozengeMg:4, dependence:"moderate", phases:[{mg:14,weeks:6},{mg:7,weeks:2}] };
+    return   { startMg:14, lozengeMg:2, dependence:"lighter", phases:[{mg:14,weeks:4},{mg:7,weeks:2}] };
+  }
+  function planSteps(plan){
+    var out=[], cum=0;
+    for (var i=0;i<plan.phases.length;i++){
+      cum += plan.phases[i].weeks;
+      var h = cum*7*24;
+      if (i < plan.phases.length-1){
+        var next = plan.phases[i+1].mg;
+        out.push({ h:h, title:"Step down to "+next+"mg", icon:"ArrowDownCircle",
+          body:"Your patch drops to "+next+"mg today. Your body needs less nicotine to stay level." });
+      } else {
+        out.push({ h:h, title:"Unhooked", icon:"Award",
+          body:"Patch-free from here. You handled the chemistry and the all-day habit." });
+      }
+    }
+    return out;
+  }
+  function currentMilestones(){
+    var list = HEALING.concat(planSteps(currentPlan || DEFAULT_PLAN));
+    list.sort(function(a,b){ return a.h-b.h; });
+    return list;
+  }
+  var MILESTONES = currentMilestones();
+
+  function nextSaturday(){ var d=new Date(); var add=(6-d.getDay()+7)%7; if(add===0) add=7; d.setDate(d.getDate()+add); return d.toISOString().slice(0,10); }
+  function todayISO(){ return new Date().toISOString().slice(0,10); }
+  function dateOffset(iso, days){ var t=new Date(iso+"T00:00:00").getTime()+days*86400000; return new Date(t).toLocaleDateString(undefined,{month:"short",day:"numeric"}); }
   var ENCOURAGEMENTS = [
     "One day at a time. The puff you don't take is the whole win.",
     "Cravings crest like a wave and pass in 3 to 5 minutes. Ride it out.",
@@ -283,6 +367,7 @@
   function show(view){
     $("bootView").style.display = view==="boot" ? "grid" : "none";
     $("authView").style.display = view==="auth" ? "grid" : "none";
+    $("onboardView").style.display = view==="onboard" ? "grid" : "none";
     $("appView").style.display  = view==="app"  ? "block" : "none";
   }
   function setSync(state){
@@ -303,7 +388,7 @@
   }
 
   function cacheKey(){ return "qt:" + uid + ":state"; }
-  function saveCache(){ try{ localStorage.setItem(cacheKey(), JSON.stringify({quitISO:quitISO, moods:moods})); }catch(e){} }
+  function saveCache(){ try{ localStorage.setItem(cacheKey(), JSON.stringify({quitISO:quitISO, moods:moods, plan:currentPlan})); }catch(e){} }
   function readCache(){ try{ var v=localStorage.getItem(cacheKey()); return v?JSON.parse(v):null; }catch(e){ return null; } }
   function readLegacy(){
     try{
@@ -317,7 +402,7 @@
   async function pull(){
     var cloud = null;
     try{
-      var res = await sb.from("tracker_state").select("quit_date, checkins, updated_at").eq("user_id", uid).maybeSingle();
+      var res = await sb.from("tracker_state").select("quit_date, checkins, updated_at, plan").eq("user_id", uid).maybeSingle();
       if (res.error) throw res.error;
       cloud = res.data;
     }catch(e){
@@ -325,15 +410,25 @@
       var cache0 = readCache(), legacy0 = readLegacy();
       quitISO = (cache0 && cache0.quitISO) || legacy0.quitISO || DEFAULT_QUIT;
       moods = mergeMoods(cache0 && cache0.moods, legacy0.moods);
-      setSync("offline"); renderAll(); return;
+      currentPlan = (cache0 && cache0.plan) || null;
+      MILESTONES = currentMilestones();
+      setSync("offline"); enterApp(); return;
     }
     var cache = readCache(), legacy = readLegacy();
+    var hasLocal = (cache && ((cache.moods && cache.moods.length) || cache.quitISO)) || (legacy.moods && legacy.moods.length) || legacy.quitISO;
+    if (!cloud && !hasLocal){
+      // brand-new user: walk them through setup instead of guessing a quit date
+      currentPlan = null; moods = []; quitISO = DEFAULT_QUIT; MILESTONES = currentMilestones();
+      setSync("synced"); obStart(false); return;
+    }
     var cloudCheckins = cloud && Array.isArray(cloud.checkins) ? cloud.checkins : [];
     moods = mergeMoods(cloudCheckins, cache && cache.moods, legacy.moods);
     quitISO = (cloud && cloud.quit_date) || (cache && cache.quitISO) || legacy.quitISO || DEFAULT_QUIT;
-    saveCache(); renderAll();
+    currentPlan = (cloud && cloud.plan) ? cloud.plan : ((cache && cache.plan) || null);
+    MILESTONES = currentMilestones();
+    saveCache(); enterApp();
     // if local/legacy had anything the cloud didn't, or there was no row yet, push the union up
-    var needPush = !cloud || moods.length !== cloudCheckins.length || (cloud.quit_date || DEFAULT_QUIT) !== quitISO;
+    var needPush = !cloud || moods.length !== cloudCheckins.length || (cloud.quit_date || DEFAULT_QUIT) !== quitISO || (!cloud.plan && currentPlan);
     if (needPush) push(); else setSync("synced");
   }
 
@@ -342,7 +437,7 @@
     setSync("saving");
     try{
       var res = await sb.from("tracker_state").upsert({
-        user_id: uid, quit_date: quitISO, checkins: moods, updated_at: new Date().toISOString()
+        user_id: uid, quit_date: quitISO, checkins: moods, plan: currentPlan, updated_at: new Date().toISOString()
       }, { onConflict: "user_id" });
       if (res.error) throw res.error;
       setSync("synced");
@@ -402,7 +497,22 @@
     }
     $("recentWrap").innerHTML=html+'</div>';
   }
-  function renderAll(){ lastEarned=-1; refreshTime(); renderRecent(); }
+  function renderAll(){ lastEarned=-1; refreshTime(); renderRecent(); renderPlan(); }
+
+  function renderPlan(){
+    var el=$("planWrap"); if(!el) return;
+    if(!currentPlan){ el.innerHTML=""; return; }
+    var p=currentPlan, rows="", cum=0;
+    for(var i=0;i<p.phases.length;i++){
+      var w=p.phases[i].weeks, a=cum+1, b=cum+w;
+      rows+='<div class="pr"><span class="mg">'+p.phases[i].mg+'mg patch</span><span class="rg">Weeks '+a+'\u2013'+b+' &middot; from '+dateOffset(quitISO,cum*7)+'</span></div>';
+      cum+=w;
+    }
+    rows+='<div class="pr"><span class="mg">Patch-free</span><span class="rg">from '+dateOffset(quitISO,cum*7)+'</span></div>';
+    el.innerHTML='<div class="planpanel"><div class="pt">Your patch plan</div>'+rows+'<div class="lz">Plus '+p.lozengeMg+'mg lozenge or gum for breakthrough cravings.</div></div>';
+  }
+
+  function enterApp(){ show("app"); startTicking(); renderAll(); }
 
   // sliders
   function paintRange(el,max,accentVar){ var p=(el.value/max)*100; el.style.background="linear-gradient(90deg, var("+accentVar+") "+p+"%, var(--locked) "+p+"%)"; }
@@ -435,11 +545,89 @@
     var sUid = session && session.user ? session.user.id : null;
     if(sUid){
       $("acctEmail").textContent = session.user.email || "";
-      show("app"); startTicking();
-      if(sUid!==currentUid){ currentUid=sUid; uid=sUid; setSync("saving"); pull(); }
+      if(sUid!==currentUid){ currentUid=sUid; uid=sUid; show("boot"); setSync("saving"); pull(); }
+      else { show("app"); }
     } else {
       currentUid=null; uid=null; show("auth");
     }
+  }
+
+  // ===== onboarding =====
+  var ob = { step:0, ttfc:null, usage:null, date:null, existing:false };
+  var TTFC_OPTS = [
+    { oh:"Within 5 minutes", od:"First thing, before anything else" },
+    { oh:"5 to 30 minutes",  od:"Pretty soon after waking" },
+    { oh:"30 to 60 minutes", od:"A while after I'm up" },
+    { oh:"More than an hour", od:"Not a priority in the morning" }
+  ];
+  var USAGE_OPTS = [
+    { oh:"Heavy",    od:"A high-strength disposable or pod most days, or near-constant use" },
+    { oh:"Moderate", od:"Regularly through the day, but not constant" },
+    { oh:"Light",    od:"A few times a day, or mostly social" }
+  ];
+
+  function obStart(existing){
+    ob = { step: existing ? 1 : 0, ttfc:null, usage:null, date:(existing ? (quitISO||nextSaturday()) : nextSaturday()), existing:!!existing };
+    show("onboard"); obRender();
+  }
+  function obExit(applyDefault){
+    if(applyDefault){ currentPlan=null; quitISO=nextSaturday(); MILESTONES=currentMilestones(); lastEarned=-1; saveCache(); enterApp(); push(); }
+    else { enterApp(); }
+  }
+  function obFinish(){
+    currentPlan = computePlan(ob.ttfc, ob.usage);
+    quitISO = ob.date || nextSaturday();
+    MILESTONES = currentMilestones(); lastEarned=-1;
+    saveCache(); enterApp(); push();
+  }
+  function obRender(){
+    var s=ob.step, b=$("obBody");
+    var dots=""; for(var i=1;i<=4;i++) dots+='<span class="dot'+(i<=s?" on":"")+'"></span>';
+    $("obDots").innerHTML=dots; $("obDots").style.visibility = s>=1 ? "visible":"hidden";
+    $("obBack").style.visibility = s>=1 ? "visible":"hidden";
+    $("obSkip").textContent = ob.existing ? "Cancel" : "Skip for now";
+
+    if(s===0){
+      b.innerHTML='<h1>Let\u2019s build your quit plan</h1><p class="sub">A few quick questions and I\u2019ll set you up with an approach backed by cessation research, plus your milestones and daily check-ins.</p><button class="primary" id="obGo">Get started</button>';
+      $("obGo").onclick=function(){ ob.step=1; obRender(); };
+    } else if(s===1){
+      b.innerHTML='<p class="q">How soon after waking do you first vape?</p><p class="sub">This is the single strongest signal of how much your body leans on nicotine.</p><div class="opts" id="obOpts"></div>';
+      obOptions("obOpts", TTFC_OPTS, ob.ttfc, function(idx){ ob.ttfc=idx; setTimeout(function(){ ob.step=2; obRender(); },160); });
+    } else if(s===2){
+      b.innerHTML='<p class="q">How would you describe your daily use?</p><p class="sub">Roughly how much you vape on a normal day.</p><div class="opts" id="obOpts"></div>';
+      obOptions("obOpts", USAGE_OPTS, ob.usage, function(idx){ ob.usage=idx; setTimeout(function(){ ob.step=3; obRender(); },160); });
+    } else if(s===3){
+      b.innerHTML='<p class="q">When do you want to start?</p><p class="sub">Your quit day. Weekends work well, the hardest 48 hours land while you\u2019re off work.</p><div class="chips" id="obChips"></div><input type="date" id="obDate" value="'+ob.date+'"><button class="primary" id="obDateNext" style="margin-top:16px">Continue</button>';
+      var chips=[{l:"This Saturday",d:nextSaturday()},{l:"Today",d:todayISO()}];
+      var ch=""; for(var j=0;j<chips.length;j++) ch+='<button class="chip'+(chips[j].d===ob.date?" sel":"")+'" data-d="'+chips[j].d+'">'+chips[j].l+'</button>';
+      $("obChips").innerHTML=ch;
+      Array.prototype.forEach.call($("obChips").querySelectorAll(".chip"),function(c){
+        c.onclick=function(){ ob.date=c.getAttribute("data-d"); $("obDate").value=ob.date; obRender(); };
+      });
+      $("obDate").onchange=function(){ ob.date=$("obDate").value; };
+      $("obDateNext").onclick=function(){ if($("obDate").value) ob.date=$("obDate").value; ob.step=4; obRender(); };
+    } else {
+      var plan=computePlan(ob.ttfc, ob.usage); ob._plan=plan;
+      var rows="", cum=0;
+      for(var k=0;k<plan.phases.length;k++){
+        var w=plan.phases[k].weeks, a=cum+1, bb=cum+w;
+        rows+='<div class="planrow"><div><div class="ph">'+plan.phases[k].mg+'mg patch daily</div><div class="pd">'+(w===1?("Week "+a):("Weeks "+a+"\u2013"+bb))+' &middot; from '+dateOffset(ob.date,cum*7)+'</div></div></div>';
+        cum+=w;
+      }
+      rows+='<div class="planrow"><div><div class="ph">Patch-free</div><div class="pd">from '+dateOffset(ob.date,cum*7)+'</div></div></div>';
+      b.innerHTML='<p class="q">Here\u2019s your plan</p><p class="sub">Your answers point to a '+plan.dependence+' level of dependence. This pairs a daily patch with a fast-acting lozenge, the most effective over-the-counter combination in the research.</p>'+rows+'<div class="lz">Plus '+plan.lozengeMg+'mg lozenge or gum whenever a craving hits.</div><p class="disc2">General guidance, not medical advice. Check with a pharmacist or clinician about your starting dose, especially if you\u2019re pregnant, under 18, or have a heart condition.</p><button class="primary" id="obFinishBtn" style="margin-top:18px">Start my journey</button>';
+      $("obFinishBtn").onclick=obFinish;
+    }
+  }
+  function obOptions(containerId, opts, selected, onPick){
+    var html=""; for(var i=0;i<opts.length;i++) html+='<button class="opt'+(selected===i?" sel":"")+'" data-i="'+i+'"><div class="oh">'+opts[i].oh+'</div><div class="od">'+opts[i].od+'</div></button>';
+    var c=$(containerId); c.innerHTML=html;
+    Array.prototype.forEach.call(c.querySelectorAll(".opt"),function(btn){
+      btn.onclick=function(){
+        Array.prototype.forEach.call(c.querySelectorAll(".opt"),function(x){x.classList.remove("sel");});
+        btn.classList.add("sel"); onPick(+btn.getAttribute("data-i"));
+      };
+    });
   }
 
   // ===== init UI =====
@@ -472,6 +660,13 @@
   $("sendLink").addEventListener("click",sendMagicLink);
   $("email").addEventListener("keydown",function(e){ if(e.key==="Enter") sendMagicLink(); });
   $("signout").addEventListener("click",async function(){ try{ await sb.auth.signOut(); }catch(e){} });
+
+  $("obBack").addEventListener("click",function(){
+    if(ob.existing && ob.step===1){ obExit(false); return; }
+    ob.step=Math.max(0, ob.step-1); obRender();
+  });
+  $("obSkip").addEventListener("click",function(){ obExit(!ob.existing); });
+  $("rebuildPlan").addEventListener("click",function(){ $("overlay").classList.remove("show"); obStart(true); });
 
   // ===== boot =====
   if(!window.supabase || !window.supabase.createClient){
